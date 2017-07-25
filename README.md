@@ -256,5 +256,13 @@ def handler(event, context):
     print("Go Serverless! Your function executed successfully")
 ```
 
+
+## Thanks
+
+Big thanks to arabold and https://github.com/arabold/serverless-sentry-plugin as
+they were the inspiration for this work.
+
 ## Version History
+
+
 
