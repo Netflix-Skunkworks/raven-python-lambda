@@ -191,7 +191,7 @@ need to be configured again:
 
 ```python
 from raven import Client # Offical `raven` module
-client.captureMessage("Hello from Lambda!", { level: "info "});
+client.captureMessage("Hello from Lambda!", level="info ")
 ```
 
 For further documentation on how to use it to capture your own messages refer to
