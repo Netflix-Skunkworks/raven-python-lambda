@@ -18,7 +18,8 @@ from raven.utils.conf import convert_options
 from raven.transport.http import HTTPTransport
 from raven.handlers.logging import SentryHandler
 
-logger = logging.basicConfig()
+logging.basicConfig()
+logger = logging.getLogger(__file__)
 
 
 def configure_raven_client(config):
