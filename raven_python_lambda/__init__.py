@@ -204,7 +204,7 @@ def timeout_warning(config, context):
 def memory_warning(config, context):
     """Determines when memory usage is nearing it's max."""
     used = psutil.Process(os.getpid()).memory_info().rss / 1048576
-    limit = context.memory_limit_in_mb
+    limit = float(context.memory_limit_in_mb)
     p = used / limit
 
     if p >= 0.75:
