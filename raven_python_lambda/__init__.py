@@ -138,7 +138,7 @@ class RavenLambdaWrapper(object):
             }
 
             # Gather identity information from context if possible
-            identity = context.get('identity')
+#             identity = context.get('identity')
 #             if identity:
 #                 raven_context['user'] = {
 #                     'id': identity.get('cognitoIdentityId', None),
