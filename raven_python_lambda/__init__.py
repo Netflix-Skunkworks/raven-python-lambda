@@ -218,7 +218,7 @@ def memory_warning(config, context):
         )
     else:
         # nothing to do check back later
-        Timer(500, memory_warning(config, context)).start()
+        Timer(500, memory_warning, (config, context)).start()
 
 
 def install_timers(config, context):
@@ -227,9 +227,9 @@ def install_timers(config, context):
         # We schedule the warning at half the maximum execution time and
         # the error a few miliseconds before the actual timeout happens.
         time_remaining = context.get_remaining_time_in_millis()
-        Timer(time_remaining / 2, timeout_warning(config, context)).start()
-        Timer(max(time_remaining - 500, 0), timeout_error(config)).start()
+        Timer(time_remaining / 2, timeout_warning, (config, context)).start()
+        Timer(max(time_remaining - 500, 0), timeout_error, (config)).start()
 
     if config.get('capture_memory_warnings'):
         # Schedule the memory watch dog interval. Warning will re-schedule itself if necessary.
-        Timer(500, memory_warning(config, context)).start()
+        Timer(500, memory_warning, (config, context)).start()
