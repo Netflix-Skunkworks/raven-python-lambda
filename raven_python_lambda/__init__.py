@@ -109,20 +109,6 @@ class RavenLambdaWrapper(object):
         if self.config['logging']:
             setup_logging(SentryHandler(self.config['raven_client']))
 
-    def handle_exception(self, *args, **kwargs):
-        assert self.config['raven_client'], 'handelException called before application configured'
-        self.capture_exception(exc_info=kwargs.get('exc_info'))
-
-    def capture_exception(self, *args, **kwargs):
-        assert self.config['raven_client'], 'captureException called before application configured'
-        result = self.config['raven_client'].captureException(*args, **kwargs)
-        return result
-
-    def capture_message(self, *args, **kwargs):
-        assert self.config['raven_client'], 'captureMessage called before application configured'
-        result = self.config['raven_client'].captureMessage(*args, **kwargs)
-        return result
-
     def __call__(self, fn):
         """Wraps our function with the necessary raven context."""
         @functools.wraps(fn)
@@ -184,7 +170,7 @@ class RavenLambdaWrapper(object):
                             'user_agent': event['headers']['User-Agent']
                         }
 
-                    self.config['raven_client'].capture_breadcrumb(**breadcrumb)
+                    self.config['raven_client'].captureBreadcrumb(**breadcrumb)
 
                 # install our timers
                 install_timers(self.config, context)
@@ -192,7 +178,7 @@ class RavenLambdaWrapper(object):
                 # invoke the original function
                 fn(event, context)
             except Exception as e:
-                self.handle_exception()
+                self.config['raven_client'].captureException()
                 raise e
 
         return decorated
@@ -200,12 +186,12 @@ class RavenLambdaWrapper(object):
 
 def timeout_error(config):
     """Captures a timeout error."""
-    config['raven_client'].capture_message('Function Timed Out', level='error')
+    config['raven_client'].captureMessage('Function Timed Out', level='error')
 
 
 def timeout_warning(config, context):
     """Captures a timeout warning."""
-    config['raven_client'].capture_message(
+    config['raven_client'].captureMessage(
         'Function Execution Time Warning',
         level='warning',
         extra={
@@ -222,7 +208,7 @@ def memory_warning(config, context):
     p = used / limit
 
     if p >= 0.75:
-        config['raven_client'].capture_message(
+        config['raven_client'].captureMessage(
             'Memory Usage Warning',
             level='warning',
             extra={
