@@ -24,7 +24,7 @@ logger = logging.getLogger(__file__)
 
 def configure_raven_client(config):
     # check for local environment
-    is_local_env = os.environ.get('IS_OFFLINE') or os.environ.get('IS_LOCAL') or os.environ.get('LAMBDA_TASK_ROOT')
+    is_local_env = os.environ.get('IS_OFFLINE') or os.environ.get('IS_LOCAL')
     if config['filter_local'] and is_local_env:
         logger.warning('Sentry is disabled in local environment')
 
