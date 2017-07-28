@@ -18,12 +18,13 @@ from raven.utils.conf import convert_options
 from raven.transport.http import HTTPTransport
 from raven.handlers.logging import SentryHandler
 
-logger = logging.basicConfig()
+logging.basicConfig()
+logger = logging.getLogger(__file__)
 
 
 def configure_raven_client(config):
     # check for local environment
-    is_local_env = os.environ.get('IS_OFFLINE') or os.environ.get('IS_LOCAL') or os.environ.get('LAMBDA_TASK_ROOT')
+    is_local_env = os.environ.get('IS_OFFLINE') or os.environ.get('IS_LOCAL')
     if config['filter_local'] and is_local_env:
         logger.warning('Sentry is disabled in local environment')
 
@@ -108,20 +109,6 @@ class RavenLambdaWrapper(object):
         if self.config['logging']:
             setup_logging(SentryHandler(self.config['raven_client']))
 
-    def handle_exception(self, *args, **kwargs):
-        assert self.config['raven_client'], 'handelException called before application configured'
-        self.capture_exception(exc_info=kwargs.get('exc_info'))
-
-    def capture_exception(self, *args, **kwargs):
-        assert self.config['raven_client'], 'captureException called before application configured'
-        result = self.config['raven_client'].captureException(*args, **kwargs)
-        return result
-
-    def capture_message(self, *args, **kwargs):
-        assert self.config['raven_client'], 'captureMessage called before application configured'
-        result = self.config['raven_client'].captureMessage(*args, **kwargs)
-        return result
-
     def __call__(self, fn):
         """Wraps our function with the necessary raven context."""
         @functools.wraps(fn)
@@ -137,16 +124,16 @@ class RavenLambdaWrapper(object):
             }
 
             # Gather identity information from context if possible
-            identity = context.get('identity')
-            if identity:
-                raven_context['user'] = {
-                    'id': identity.get('cognitoIdentityId', None),
-                    'username': identity.get('user', None),
-                    'ip_address': identity.get('sourceIp', None),
-                    'cognito_identity_pool_id': identity.get('cognitoIdentityPoolId', None),
-                    'cognito_authentication_type': identity.get('cognitoAuthenticationType', None),
-                    'user_agent': identity.get('userAgent')
-                }
+#             identity = context.get('identity')
+#             if identity:
+#                 raven_context['user'] = {
+#                     'id': identity.get('cognitoIdentityId', None),
+#                     'username': identity.get('user', None),
+#                     'ip_address': identity.get('sourceIp', None),
+#                     'cognito_identity_pool_id': identity.get('cognitoIdentityPoolId', None),
+#                     'cognito_authentication_type': identity.get('cognitoAuthenticationType', None),
+#                     'user_agent': identity.get('userAgent')
+#                 }
 
             # Add additional tags for AWS_PROXY endpoints
             if event.get('requestContext'):
@@ -183,7 +170,7 @@ class RavenLambdaWrapper(object):
                             'user_agent': event['headers']['User-Agent']
                         }
 
-                    self.config['raven_client'].capture_breadcrumb(**breadcrumb)
+                    self.config['raven_client'].captureBreadcrumb(**breadcrumb)
 
                 # install our timers
                 install_timers(self.config, context)
@@ -191,7 +178,7 @@ class RavenLambdaWrapper(object):
                 # invoke the original function
                 fn(event, context)
             except Exception as e:
-                self.handle_exception()
+                self.config['raven_client'].captureException()
                 raise e
 
         return decorated
@@ -199,12 +186,12 @@ class RavenLambdaWrapper(object):
 
 def timeout_error(config):
     """Captures a timeout error."""
-    config['raven_client'].capture_message('Function Timed Out', level='error')
+    config['raven_client'].captureMessage('Function Timed Out', level='error')
 
 
 def timeout_warning(config, context):
     """Captures a timeout warning."""
-    config['raven_client'].capture_message(
+    config['raven_client'].captureMessage(
         'Function Execution Time Warning',
         level='warning',
         extra={
@@ -217,11 +204,11 @@ def timeout_warning(config, context):
 def memory_warning(config, context):
     """Determines when memory usage is nearing it's max."""
     used = psutil.Process(os.getpid()).memory_info().rss / 1048576
-    limit = context.memory_limit_in_mb
+    limit = float(context.memory_limit_in_mb)
     p = used / limit
 
     if p >= 0.75:
-        config['raven_client'].capture_message(
+        config['raven_client'].captureMessage(
             'Memory Usage Warning',
             level='warning',
             extra={
@@ -231,7 +218,7 @@ def memory_warning(config, context):
         )
     else:
         # nothing to do check back later
-        Timer(500, memory_warning(config, context)).start()
+        Timer(500, memory_warning, (config, context)).start()
 
 
 def install_timers(config, context):
@@ -240,9 +227,9 @@ def install_timers(config, context):
         # We schedule the warning at half the maximum execution time and
         # the error a few miliseconds before the actual timeout happens.
         time_remaining = context.get_remaining_time_in_millis()
-        Timer(time_remaining / 2, timeout_warning(config, context)).start()
-        Timer(max(time_remaining - 500, 0), timeout_error(config)).start()
+        Timer(time_remaining / 2, timeout_warning, (config, context)).start()
+        Timer(max(time_remaining - 500, 0), timeout_error, (config)).start()
 
     if config.get('capture_memory_warnings'):
         # Schedule the memory watch dog interval. Warning will re-schedule itself if necessary.
-        Timer(500, memory_warning(config, context)).start()
+        Timer(500, memory_warning, (config, context)).start()
