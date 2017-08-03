@@ -124,16 +124,17 @@ class RavenLambdaWrapper(object):
             }
 
             # Gather identity information from context if possible
-#             identity = context.get('identity')
-#             if identity:
-#                 raven_context['user'] = {
-#                     'id': identity.get('cognitoIdentityId', None),
-#                     'username': identity.get('user', None),
-#                     'ip_address': identity.get('sourceIp', None),
-#                     'cognito_identity_pool_id': identity.get('cognitoIdentityPoolId', None),
-#                     'cognito_authentication_type': identity.get('cognitoAuthenticationType', None),
-#                     'user_agent': identity.get('userAgent')
-#                 }
+            if event.get('requestContext'):
+                identity = event['requestContext']['identity']
+                if identity:
+                    raven_context['user'] = {
+                         'id': identity.get('cognitoIdentityId', None),
+                         'username': identity.get('user', None),
+                         'ip_address': identity.get('sourceIp', None),
+                         'cognito_identity_pool_id': identity.get('cognitoIdentityPoolId', None),
+                         'cognito_authentication_type': identity.get('cognitoAuthenticationType', None),
+                         'user_agent': identity.get('userAgent')
+                     }
 
             # Add additional tags for AWS_PROXY endpoints
             if event.get('requestContext'):
@@ -165,9 +166,8 @@ class RavenLambdaWrapper(object):
                     if event.get('requestContext'):
                         breadcrumb['data'] = {
                             'http_method': event['requestContext']['httpMethod'],
-                            'host': event['requestContext']['headers']['Host'],
-                            'path': event['path'],
-                            'user_agent': event['headers']['User-Agent']
+                            'host': event['headers']['Host'],
+                            'path': event['path']
                         }
 
                     self.config['raven_client'].captureBreadcrumb(**breadcrumb)
