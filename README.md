@@ -136,7 +136,7 @@ def handler(event, context):
 ```python
 
 from raven import Client # Offical `raven` module
-from raven-python-lambda import RavenLambdaWrapper
+from raven_python_lambda import RavenLambdaWrapper
 
 @RavenLambdaWrapper()
 def handler(event, context):
@@ -168,7 +168,7 @@ configuration options to the `RavenLambdaWrapper` directly:
 
 ```python
 from raven import Client # Offical `raven` module
-from raven-python-lambda import RavenLambdaWrapper
+from raven_python_lambda import RavenLambdaWrapper
 
 raven_config = {
   'capture_errors': False,
@@ -241,7 +241,7 @@ environment variables or the `RavenLambdaWrapper` during initialization:
 
 ```python
 from raven import Client # Offical `raven` module
-from raven-python-lambda import RavenLambdaWrapper
+from raven_python_lambda import RavenLambdaWrapper
 
 raven_config = {
   'capture_errors': False,  # Don't log error responses from the Lambda ...

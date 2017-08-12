@@ -176,7 +176,7 @@ class RavenLambdaWrapper(object):
                 install_timers(self.config, context)
 
                 # invoke the original function
-                fn(event, context)
+                return fn(event, context)
             except Exception as e:
                 self.config['raven_client'].captureException()
                 raise e
