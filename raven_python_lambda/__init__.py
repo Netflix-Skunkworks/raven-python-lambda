@@ -21,6 +21,7 @@ from raven.handlers.logging import SentryHandler
 logging.basicConfig()
 logger = logging.getLogger(__file__)
 
+
 def boolval(v):
   return v in ("yes", "true", "t", "1", True, 1)
 
@@ -87,12 +88,7 @@ class RavenLambdaWrapper(object):
 
     """
     def __init__(self, config=None):
-        self.config = config
-
-        if not self.config:
-            self.config = {}
-
-        config_defaults = {
+        self.config = {
             'capture_timeout_warnings': boolval(os.environ.get('SENTRY_CAPTURE_TIMEOUTS', True)),
             'capture_memory_warnings': boolval(os.environ.get('SENTRY_CAPTURE_MEMORY', True)),
             'capture_unhandled_exceptions': boolval(os.environ.get('SENTRY_CAPTURE_UNHANDLED', True)),
@@ -102,8 +98,7 @@ class RavenLambdaWrapper(object):
             'logging': boolval(os.environ.get('SENTRY_CAPTURE_LOGS', True)),
             'enabled': boolval(os.environ.get('SENTRY_ENABLED', True)),
         }
-
-        self.config.update(config_defaults)
+        self.config.update(config or {})
 
         if self.config.get('raven_client'):
             assert self.config.get('raven_client') and not isinstance(self.config.get('raven_client'), Client)
