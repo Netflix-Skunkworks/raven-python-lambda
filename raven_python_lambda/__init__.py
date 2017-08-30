@@ -21,6 +21,9 @@ from raven.handlers.logging import SentryHandler
 logging.basicConfig()
 logger = logging.getLogger(__file__)
 
+def boolval(v):
+  return v in ("yes", "true", "t", "1", True, 1)
+
 
 def configure_raven_client(config):
     # check for local environment
@@ -90,13 +93,14 @@ class RavenLambdaWrapper(object):
             self.config = {}
 
         config_defaults = {
-            'capture_timeout_warnings': os.environ.get('SENTRY_CAPTURE_TIMEOUTS', True),
-            'capture_memory_warnings': os.environ.get('SENTRY_CAPTURE_MEMORY', True),
-            'capture_unhandled_exceptions': os.environ.get('SENTRY_CAPTURE_UNHANDLED', True),
-            'auto_bread_crumbs': os.environ.get('SENTRY_AUTO_BREADCRUMBS', True),
-            'capture_errors': os.environ.get('SENTRY_CAPTURE_ERRORS', True),
-            'filter_local': os.environ.get('SENTRY_FILTER_LOCAL', True),
-            'logging': os.environ.get('SENTRY_CAPTURE_LOGS', True),
+            'capture_timeout_warnings': boolval(os.environ.get('SENTRY_CAPTURE_TIMEOUTS', True)),
+            'capture_memory_warnings': boolval(os.environ.get('SENTRY_CAPTURE_MEMORY', True)),
+            'capture_unhandled_exceptions': boolval(os.environ.get('SENTRY_CAPTURE_UNHANDLED', True)),
+            'auto_bread_crumbs': boolval(os.environ.get('SENTRY_AUTO_BREADCRUMBS', True)),
+            'capture_errors': boolval(os.environ.get('SENTRY_CAPTURE_ERRORS', True)),
+            'filter_local': boolval(os.environ.get('SENTRY_FILTER_LOCAL', True)),
+            'logging': boolval(os.environ.get('SENTRY_CAPTURE_LOGS', True)),
+            'enabled': boolval(os.environ.get('SENTRY_ENABLED', True)),
         }
 
         self.config.update(config_defaults)
@@ -113,6 +117,9 @@ class RavenLambdaWrapper(object):
         """Wraps our function with the necessary raven context."""
         @functools.wraps(fn)
         def decorated(event, context):
+            if not self.config["enabled"]:
+                return fn(event, context)
+
             self.context = context
 
             raven_context = {
