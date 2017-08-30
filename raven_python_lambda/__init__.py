@@ -160,6 +160,7 @@ class RavenLambdaWrapper(object):
                     raven_context['tags']['cloudwatch_region'] = event['awsRegion']
 
             # rethrow exception to halt lambda execution
+            timers = []
             try:
                 if self.config.get('auto_bread_crumbs'):
                     # first breadcrumb is the invocation of the lambda itself
@@ -180,13 +181,16 @@ class RavenLambdaWrapper(object):
                     self.config['raven_client'].captureBreadcrumb(**breadcrumb)
 
                 # install our timers
-                install_timers(self.config, context)
+                timers = install_timers(self.config, context)
 
                 # invoke the original function
                 return fn(event, context)
             except Exception as e:
                 self.config['raven_client'].captureException()
                 raise e
+            finally:
+                for t in timers:
+                    t.cancel()
 
         return decorated
 
@@ -230,13 +234,19 @@ def memory_warning(config, context):
 
 def install_timers(config, context):
     """Create the timers as specified by the plugin configuration."""
+    timers = []
     if config.get('capture_timeout_warnings'):
         # We schedule the warning at half the maximum execution time and
         # the error a few miliseconds before the actual timeout happens.
         time_remaining = context.get_remaining_time_in_millis()
-        Timer(time_remaining / 2, timeout_warning, (config, context)).start()
-        Timer(max(time_remaining - 500, 0), timeout_error, (config)).start()
+        timers.append(Timer(time_remaining / 2, timeout_warning, (config, context)))
+        timers.append(Timer(max(time_remaining - 500, 0), timeout_error, [config]))
 
     if config.get('capture_memory_warnings'):
         # Schedule the memory watch dog interval. Warning will re-schedule itself if necessary.
-        Timer(500, memory_warning, (config, context)).start()
+        timers.append(Timer(500, memory_warning, (config, context)))
+
+    for t in timers:
+        t.start()
+
+    return timers
