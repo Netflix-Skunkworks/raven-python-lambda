@@ -22,6 +22,10 @@ logging.basicConfig()
 logger = logging.getLogger(__file__)
 
 
+def boolval(v):
+  return v in ("yes", "true", "t", "1", True, 1)
+
+
 def configure_raven_client(config):
     # check for local environment
     is_local_env = os.environ.get('IS_OFFLINE') or os.environ.get('IS_LOCAL')
@@ -85,13 +89,14 @@ class RavenLambdaWrapper(object):
     """
     def __init__(self, config=None):
         self.config = {
-            'capture_timeout_warnings': os.environ.get('SENTRY_CAPTURE_TIMEOUTS', True),
-            'capture_memory_warnings': os.environ.get('SENTRY_CAPTURE_MEMORY', True),
-            'capture_unhandled_exceptions': os.environ.get('SENTRY_CAPTURE_UNHANDLED', True),
-            'auto_bread_crumbs': os.environ.get('SENTRY_AUTO_BREADCRUMBS', True),
-            'capture_errors': os.environ.get('SENTRY_CAPTURE_ERRORS', True),
-            'filter_local': os.environ.get('SENTRY_FILTER_LOCAL', True),
-            'logging': os.environ.get('SENTRY_CAPTURE_LOGS', True),
+            'capture_timeout_warnings': boolval(os.environ.get('SENTRY_CAPTURE_TIMEOUTS', True)),
+            'capture_memory_warnings': boolval(os.environ.get('SENTRY_CAPTURE_MEMORY', True)),
+            'capture_unhandled_exceptions': boolval(os.environ.get('SENTRY_CAPTURE_UNHANDLED', True)),
+            'auto_bread_crumbs': boolval(os.environ.get('SENTRY_AUTO_BREADCRUMBS', True)),
+            'capture_errors': boolval(os.environ.get('SENTRY_CAPTURE_ERRORS', True)),
+            'filter_local': boolval(os.environ.get('SENTRY_FILTER_LOCAL', True)),
+            'logging': boolval(os.environ.get('SENTRY_CAPTURE_LOGS', True)),
+            'enabled': boolval(os.environ.get('SENTRY_ENABLED', True)),
         }
         self.config.update(config or {})
 
@@ -107,6 +112,9 @@ class RavenLambdaWrapper(object):
         """Wraps our function with the necessary raven context."""
         @functools.wraps(fn)
         def decorated(event, context):
+            if not self.config["enabled"]:
+                return fn(event, context)
+
             self.context = context
 
             raven_context = {
@@ -147,6 +155,7 @@ class RavenLambdaWrapper(object):
                     raven_context['tags']['cloudwatch_region'] = event['awsRegion']
 
             # rethrow exception to halt lambda execution
+            timers = []
             try:
                 if self.config.get('auto_bread_crumbs'):
                     # first breadcrumb is the invocation of the lambda itself
@@ -167,13 +176,16 @@ class RavenLambdaWrapper(object):
                     self.config['raven_client'].captureBreadcrumb(**breadcrumb)
 
                 # install our timers
-                install_timers(self.config, context)
+                timers = install_timers(self.config, context)
 
                 # invoke the original function
                 return fn(event, context)
             except Exception as e:
                 self.config['raven_client'].captureException()
                 raise e
+            finally:
+                for t in timers:
+                    t.cancel()
 
         return decorated
 
@@ -217,13 +229,19 @@ def memory_warning(config, context):
 
 def install_timers(config, context):
     """Create the timers as specified by the plugin configuration."""
+    timers = []
     if config.get('capture_timeout_warnings'):
         # We schedule the warning at half the maximum execution time and
         # the error a few miliseconds before the actual timeout happens.
         time_remaining = context.get_remaining_time_in_millis()
-        Timer(time_remaining / 2, timeout_warning, (config, context)).start()
-        Timer(max(time_remaining - 500, 0), timeout_error, (config)).start()
+        timers.append(Timer(time_remaining / 2, timeout_warning, (config, context)))
+        timers.append(Timer(max(time_remaining - 500, 0), timeout_error, [config]))
 
     if config.get('capture_memory_warnings'):
         # Schedule the memory watch dog interval. Warning will re-schedule itself if necessary.
-        Timer(500, memory_warning, (config, context)).start()
+        timers.append(Timer(500, memory_warning, (config, context)))
+
+    for t in timers:
+        t.start()
+
+    return timers
