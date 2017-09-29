@@ -24,7 +24,9 @@ install_requires = [
 
 tests_require = [
     'pytest',
-    'coverall'
+    'moto',
+    'coveralls',
+    'tox'
 ]
 
 setup(

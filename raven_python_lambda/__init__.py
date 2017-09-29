@@ -1,9 +1,11 @@
 """
-raven_python_lambda.lambda
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. module: raven_python_lambda
+    :platform: Unix
+    :copyright: (c) 2017 by Netflix Inc., see AUTHORS for more
+    :license: Apache, see LICENSE for more details.
 
-Raven wrapper for AWS Lambda handlers.
-
+.. moduleauthor:: Kevin Glisson <kevgliss>
+.. moduleauthor:: Mike Grima <mikegrima> @THISisPLACEHLDR
 """
 import os
 import math
@@ -17,6 +19,8 @@ from raven.conf import setup_logging
 from raven.utils.conf import convert_options
 from raven.transport.http import HTTPTransport
 from raven.handlers.logging import SentryHandler
+
+from raven_python_lambda.sqs_transport import SQSTransport
 
 logging.basicConfig()
 logger = logging.getLogger(__file__)
@@ -50,7 +54,7 @@ def configure_raven_client(config):
             'alias': os.environ.get('SERVERLESS_ALIAS'),
             'region': os.environ.get('SERVERLESS_REGION') or os.environ.get('AWS_REGION')
         },
-        'transport': HTTPTransport,
+        'transport': SQSTransport if "sqs_name" in os.environ.get('SENTRY_DSN', "") else HTTPTransport,
         'dsn': os.environ.get('SENTRY_DSN')
     }
 

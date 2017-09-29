@@ -1,0 +1,3 @@
+[report]
+include = raven_python_lambda/*.py
+omit = raven_python_lambda/__about__.py
