@@ -3,6 +3,7 @@
 [![serverless](http://public.serverless.com/badges/v3.svg)](http://www.serverless.com)
 [![Build Status](https://travis-ci.org/Netflix-Skunkworks/raven-python-lambda.svg?branch=master)](https://travis-ci.org/Netflix-Skunkworks/raven-python-lambda)
 [![Coverage Status](https://coveralls.io/repos/github/Netflix-Skunkworks/raven-python-lambda/badge.svg?branch=master)](https://coveralls.io/github/Netflix-Skunkworks/raven-python-lambda?branch=master)
+[![PyPI version](https://badge.fury.io/py/raven-python-lambda.svg)](https://badge.fury.io/py/raven-python-lambda)
 
 ## About
 This library simplifies integration of Sentry's
@@ -257,6 +258,38 @@ def handler(event, context):
     print("Go Serverless! Your function executed successfully")
 ```
 
+## SQS Proxying
+
+This also supports the ability to forward all Sentry messages to an SQS queue. This is meant to be used in conjunction
+with the [raven-sqs-proxy](https://github.com/Netflix-Skunkworks/raven-sqs-proxy) (polls SQS and then passes the message
+on to Sentry).
+
+**Why is this useful?**
+If you don't have the ability of running AWS Lambda functions within a VPC, then then this plugin is necessary.
+
+Some reasons for why you would not want or need to run a lambda function within VPC are:
+- An AWS account doesn't have a useful VPC (special purpose accounts)
+- An AWS account doesn't have a VPC that is peered to a VPC where Sentry is running
+- Cross-region use cases where Sentry lives in an internal VPC without external connectivity
+- **ENI Exhaustion Concerns:** It is possible to exhaust the ENIs within a VPC if you have many, many lambdas running. This can break new deployments within a VPC.
+
+### What is required for SQS ###
+For this to work, you will need:
+1. An SQS queue
+1. A lambda function launched with an IAM role with the following permissions to the SQS queue:
+    ```
+    sqs:GetQueueUrl
+    sqs:SendMessage
+    ```
+1. A DSN that with the following parameters to the URL:
+    ```
+    sqs_region - The AWS region name for where the SQS queue resides
+    sqs_account - This is the 12 digit AWS account number
+    sqs_name - The name of the SQS queue
+    ```
+    - An example: `https://user:pass@some-sentry-server?sqs_region=us-west-2&sqs_account=111111111111sqs_name=sentry-queue`
+1. The proxying service enabled and running. Please review the documentation on the 
+[raven-sqs-proxy](https://github.com/Netflix-Skunkworks/raven-sqs-proxy) page for details.
 
 ## Thanks
 
