@@ -1,7 +1,8 @@
 # ⚡️ Sentry/Raven SDK Integration For AWS Lambda (python) and Serverless
 
 [![serverless](http://public.serverless.com/badges/v3.svg)](http://www.serverless.com)
-
+[![Build Status](https://travis-ci.org/Netflix-Skunkworks/raven-python-lambda.svg?branch=master)](https://travis-ci.org/Netflix-Skunkworks/raven-python-lambda)
+[![Coverage Status](https://coveralls.io/repos/github/Netflix-Skunkworks/raven-python-lambda/badge.svg?branch=master)](https://coveralls.io/github/Netflix-Skunkworks/raven-python-lambda?branch=master)
 
 ## About
 This library simplifies integration of Sentry's

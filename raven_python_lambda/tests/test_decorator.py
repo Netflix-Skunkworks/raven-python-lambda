@@ -1,9 +1,11 @@
 import threading
 from time import sleep
+import os
 
 import pytest
 
 from raven_python_lambda import RavenLambdaWrapper
+
 
 def test_raven_lambda_wrapper():
     @RavenLambdaWrapper()
@@ -34,3 +36,16 @@ def test_only_has_one_running_thread_after_execution_finishes():
 
     sleep(0.1)  # A bit iffy. But if we don't wait a bit the threads will not have stopped
     assert threading.active_count() == 1, 'expected all scheduled threads to have been removed'
+
+
+def test_that_sqs_transport_is_used(sqs, sqs_queue):
+    @RavenLambdaWrapper()
+    def test_func(event, context):
+        raise Exception('There was an error.')
+
+    with pytest.raises(Exception):
+        test_func({}, FakeContext())
+
+    # Check that it sent to SQS:
+    messages = sqs.receive_message(QueueUrl=sqs_queue)["Messages"]
+    assert len(messages) == 1
