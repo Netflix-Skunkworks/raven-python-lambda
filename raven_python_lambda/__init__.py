@@ -100,6 +100,7 @@ class RavenLambdaWrapper(object):
             'capture_errors': boolval(os.environ.get('SENTRY_CAPTURE_ERRORS', True)),
             'filter_local': boolval(os.environ.get('SENTRY_FILTER_LOCAL', True)),
             'logging': boolval(os.environ.get('SENTRY_CAPTURE_LOGS', True)),
+            'log_level': os.environ.get('SENTRY_LOG_LEVEL', logging.WARNING),
             'enabled': boolval(os.environ.get('SENTRY_ENABLED', True)),
         }
         self.config.update(config or {})
@@ -110,7 +111,9 @@ class RavenLambdaWrapper(object):
             self.config['raven_client'] = configure_raven_client(self.config)
 
         if self.config['logging']:
-            setup_logging(SentryHandler(self.config['raven_client']))
+            handler = SentryHandler(self.config['raven_client'])
+            handler.setLevel(self.config['log_level'])
+            setup_logging(handler)
 
     def __call__(self, fn):
         """Wraps our function with the necessary raven context."""
