@@ -100,7 +100,7 @@ class RavenLambdaWrapper(object):
             'capture_errors': boolval(os.environ.get('SENTRY_CAPTURE_ERRORS', True)),
             'filter_local': boolval(os.environ.get('SENTRY_FILTER_LOCAL', True)),
             'logging': boolval(os.environ.get('SENTRY_CAPTURE_LOGS', True)),
-            'log_level': os.environ.get('SENTRY_LOG_LEVEL', logging.WARNING),
+            'log_level': int(os.environ.get('SENTRY_LOG_LEVEL', logging.WARNING)),
             'enabled': boolval(os.environ.get('SENTRY_ENABLED', True)),
         }
         self.config.update(config or {})
