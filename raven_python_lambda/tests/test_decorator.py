@@ -59,3 +59,16 @@ def test_that_local_environment_is_ignored(monkeypatch):
         assert not wrapper.config['enabled']
         assert not wrapper.config['raven_client']
         monkeypatch.delenv(k)
+
+
+def test_that_remote_environment_is_not_ignored(monkeypatch):
+    keys = ['IS_OFFLINE', 'IS_LOCAL']
+    for k in keys:
+        try:
+            monkeypatch.delenv(k)
+        except:
+            pass
+
+    wrapper = RavenLambdaWrapper()
+    assert wrapper.config['enabled']
+    assert wrapper.config['raven_client']
