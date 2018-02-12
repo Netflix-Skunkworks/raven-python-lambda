@@ -35,6 +35,8 @@ def configure_raven_client(config):
     is_local_env = os.environ.get('IS_OFFLINE') or os.environ.get('IS_LOCAL')
     if config['filter_local'] and is_local_env:
         logger.warning('Sentry is disabled in local environment')
+        config["enabled"] = False
+        return None
 
     defaults = {
         'include_paths': (
@@ -109,6 +111,9 @@ class RavenLambdaWrapper(object):
             assert self.config.get('raven_client') and not isinstance(self.config.get('raven_client'), Client)
         else:
             self.config['raven_client'] = configure_raven_client(self.config)
+
+        if self.config['logging'] and self.config['raven_client']:
+            setup_logging(SentryHandler(self.config['raven_client']))
 
         if self.config['logging']:
             handler = SentryHandler(self.config['raven_client'])

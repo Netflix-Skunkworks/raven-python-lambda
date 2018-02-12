@@ -21,7 +21,7 @@ def test_can_override_configuration():
 
     assert r.config['logging'] is False, 'expected the config option to be overridden'
 
-    
+
 class FakeContext(object):
     def get_remaining_time_in_millis(self):
         return 300000
@@ -49,3 +49,26 @@ def test_that_sqs_transport_is_used(sqs, sqs_queue):
     # Check that it sent to SQS:
     messages = sqs.receive_message(QueueUrl=sqs_queue)["Messages"]
     assert len(messages) == 1
+
+
+def test_that_local_environment_is_ignored(monkeypatch):
+    keys = ['IS_OFFLINE', 'IS_LOCAL']
+    for k in keys:
+        monkeypatch.setenv(k, 'yes.')
+        wrapper = RavenLambdaWrapper()
+        assert not wrapper.config['enabled']
+        assert not wrapper.config['raven_client']
+        monkeypatch.delenv(k)
+
+
+def test_that_remote_environment_is_not_ignored(monkeypatch):
+    keys = ['IS_OFFLINE', 'IS_LOCAL']
+    for k in keys:
+        try:
+            monkeypatch.delenv(k)
+        except:
+            pass
+
+    wrapper = RavenLambdaWrapper()
+    assert wrapper.config['enabled']
+    assert wrapper.config['raven_client']
