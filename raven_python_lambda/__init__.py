@@ -100,6 +100,7 @@ class RavenLambdaWrapper(object):
             'capture_errors': boolval(os.environ.get('SENTRY_CAPTURE_ERRORS', True)),
             'filter_local': boolval(os.environ.get('SENTRY_FILTER_LOCAL', True)),
             'logging': boolval(os.environ.get('SENTRY_CAPTURE_LOGS', True)),
+            'log_level': int(os.environ.get('SENTRY_LOG_LEVEL', logging.WARNING)),
             'enabled': boolval(os.environ.get('SENTRY_ENABLED', True)),
         }
         self.config.update(config or {})
@@ -110,7 +111,9 @@ class RavenLambdaWrapper(object):
             self.config['raven_client'] = configure_raven_client(self.config)
 
         if self.config['logging']:
-            setup_logging(SentryHandler(self.config['raven_client']))
+            handler = SentryHandler(self.config['raven_client'])
+            handler.setLevel(self.config['log_level'])
+            setup_logging(handler)
 
     def __call__(self, fn):
         """Wraps our function with the necessary raven context."""
@@ -228,7 +231,7 @@ def memory_warning(config, context):
         )
     else:
         # nothing to do check back later
-        Timer(500, memory_warning, (config, context)).start()
+        Timer(.5, memory_warning, (config, context)).start()
 
 
 def install_timers(config, context):
@@ -237,13 +240,13 @@ def install_timers(config, context):
     if config.get('capture_timeout_warnings'):
         # We schedule the warning at half the maximum execution time and
         # the error a few miliseconds before the actual timeout happens.
-        time_remaining = context.get_remaining_time_in_millis()
+        time_remaining = context.get_remaining_time_in_millis() / 1000
         timers.append(Timer(time_remaining / 2, timeout_warning, (config, context)))
-        timers.append(Timer(max(time_remaining - 500, 0), timeout_error, [config]))
+        timers.append(Timer(max(time_remaining - .5, 0), timeout_error, [config]))
 
     if config.get('capture_memory_warnings'):
         # Schedule the memory watch dog interval. Warning will re-schedule itself if necessary.
-        timers.append(Timer(500, memory_warning, (config, context)))
+        timers.append(Timer(.5, memory_warning, (config, context)))
 
     for t in timers:
         t.start()
