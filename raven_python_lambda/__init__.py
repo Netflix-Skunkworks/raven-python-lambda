@@ -27,7 +27,7 @@ logger = logging.getLogger(__file__)
 
 
 def boolval(v):
-  return v in ("yes", "true", "t", "1", True, 1)
+    return v in ("yes", "true", "t", "1", True, 1)
 
 
 def configure_raven_client(config):

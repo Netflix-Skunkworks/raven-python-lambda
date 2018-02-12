@@ -10,6 +10,7 @@ import base64
 import json
 
 import boto3
+from botocore.exceptions import ClientError
 
 from raven.utils.compat import string_types
 from raven.conf import defaults
@@ -55,5 +56,10 @@ class SQSTransport(Transport):
             "data": base64.b64encode(data).decode("utf-8")
         }
 
-        self.sqs_client.send_message(QueueUrl=self.queue_url,
-                                     MessageBody=json.dumps(payload))
+        try:
+            self.sqs_client.send_message(QueueUrl=self.queue_url,
+                                         MessageBody=json.dumps(payload))
+        except ClientError as e:
+            # TODO break circular dep for logging
+            print(data)  # not sure if this is the best way to get messages.
+            raise e
