@@ -31,20 +31,13 @@ def boolval(v):
 
 
 def configure_raven_client(config):
-    # check for local environment
-    is_local_env = os.environ.get('IS_OFFLINE') or os.environ.get('IS_LOCAL')
-    if config['filter_local'] and is_local_env:
-        logger.warning('Sentry is disabled in local environment')
-        config["enabled"] = False
-        return None
-
     defaults = {
         'include_paths': (
             set(config.get('SENTRY_INCLUDE_PATHS', []))
         ),
         'ignore_exceptions': config.get('RAVEN_IGNORE_EXCEPTIONS', []),
         'release': os.environ.get('SENTRY_RELEASE'),
-        'environment': 'Local' if is_local_env else os.environ.get('SENTRY_ENVIRONMENT'),
+        'environment': 'Local' if config['is_local'] else os.environ.get('SENTRY_ENVIRONMENT'),
         'tags': {
             'lambda': os.environ.get('AWS_LAMBDA_FUNCTION_NAME'),
             'version': os.environ.get('AWS_LAMBDA_FUNCTION_VERSION'),
@@ -101,11 +94,18 @@ class RavenLambdaWrapper(object):
             'auto_bread_crumbs': boolval(os.environ.get('SENTRY_AUTO_BREADCRUMBS', True)),
             'capture_errors': boolval(os.environ.get('SENTRY_CAPTURE_ERRORS', True)),
             'filter_local': boolval(os.environ.get('SENTRY_FILTER_LOCAL', True)),
+            'is_local': os.environ.get('IS_OFFLINE', False) or os.environ.get('IS_LOCAL', False),
             'logging': boolval(os.environ.get('SENTRY_CAPTURE_LOGS', True)),
             'log_level': int(os.environ.get('SENTRY_LOG_LEVEL', logging.WARNING)),
             'enabled': boolval(os.environ.get('SENTRY_ENABLED', True)),
         }
         self.config.update(config or {})
+
+        # check for local environment
+        if self.config['filter_local'] and self.config['is_local']:
+            logger.warning('Sentry is disabled in local environment')
+            self.config["enabled"] = False
+            return
 
         if self.config.get('raven_client'):
             assert self.config.get('raven_client') and not isinstance(self.config.get('raven_client'), Client)
@@ -113,9 +113,6 @@ class RavenLambdaWrapper(object):
             self.config['raven_client'] = configure_raven_client(self.config)
 
         if self.config['logging'] and self.config['raven_client']:
-            setup_logging(SentryHandler(self.config['raven_client']))
-
-        if self.config['logging']:
             handler = SentryHandler(self.config['raven_client'])
             handler.setLevel(self.config['log_level'])
             setup_logging(handler)
