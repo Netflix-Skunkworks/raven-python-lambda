@@ -103,6 +103,7 @@ during deployment.
 | `SENTRY_CAPTURE_MEMORY` | Enable monitoring memory usage (defaults to `true`) |
 | `SENTRY_CAPTURE_TIMEOUTS` | Enable monitoring execution timeouts (defaults to `true`) |
 | `SENTRY_CAPTURE_LOGS` | Enable capture log messages (defaults to `true`) |
+| `SENTRY_LOG_LEVEL` | Capture logs in sentry starting at this level (defaults to logging.WARNING) |
 
 In addition the library checks for the following optional variables and adds
 them as custom tags automatically:
@@ -288,7 +289,7 @@ For this to work, you will need:
     sqs_name - The name of the SQS queue
     ```
     - An example: `https://user:pass@some-sentry-server?sqs_region=us-west-2&sqs_account=111111111111sqs_name=sentry-queue`
-1. The proxying service enabled and running. Please review the documentation on the 
+1. The proxying service enabled and running. Please review the documentation on the
 [raven-sqs-proxy](https://github.com/Netflix-Skunkworks/raven-sqs-proxy) page for details.
 
 ## Thanks
