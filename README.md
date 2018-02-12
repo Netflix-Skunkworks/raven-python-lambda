@@ -102,6 +102,8 @@ during deployment.
 | `SENTRY_CAPTURE_UNHANDLED` | Enable capture unhandled exceptions (defaults to `true`) |
 | `SENTRY_CAPTURE_MEMORY` | Enable monitoring memory usage (defaults to `true`) |
 | `SENTRY_CAPTURE_TIMEOUTS` | Enable monitoring execution timeouts (defaults to `true`) |
+| `SENTRY_CAPTURE_LOGS` | Enable capture log messages (defaults to `true`) |
+| `SENTRY_LOG_LEVEL` | Capture logs in sentry starting at this level (defaults to logging.WARNING) |
 
 In addition the library checks for the following optional variables and adds
 them as custom tags automatically:
@@ -112,7 +114,6 @@ them as custom tags automatically:
 | `SERVERLESS_STAGE` | stage | Serverless stage |
 | `SERVERLESS_ALIAS` | alias | Serverless alias, see [Serverless AWS Alias Plugin](https://github.com/hyperbrain/serverless-aws-alias) |
 | `SERVERLESS_REGION` | region | Serverless region name |
-
 
 ## Usage
 For maximum flexibility this library is implemented as a decorated around your
