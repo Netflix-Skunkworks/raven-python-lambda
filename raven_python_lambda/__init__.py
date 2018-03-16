@@ -30,6 +30,19 @@ def boolval(v):
     return v in ("yes", "true", "t", "1", True, 1)
 
 
+log_levels = {
+    'CRITICAL': logging.CRITICAL,
+    'ERROR': logging.ERROR,
+    'WARNING': logging.WARNING,
+    'INFO': logging.INFO,
+    'DEBUG': logging.DEBUG
+}
+
+
+def extract_log_level_from_environment(k, default):
+    return log_levels.get(os.environ.get(k)) or int(os.environ.get(k, default))
+
+
 def configure_raven_client(config):
     defaults = {
         'include_paths': (
@@ -96,7 +109,7 @@ class RavenLambdaWrapper(object):
             'filter_local': boolval(os.environ.get('SENTRY_FILTER_LOCAL', True)),
             'is_local': os.environ.get('IS_OFFLINE', False) or os.environ.get('IS_LOCAL', False),
             'logging': boolval(os.environ.get('SENTRY_CAPTURE_LOGS', True)),
-            'log_level': int(os.environ.get('SENTRY_LOG_LEVEL', logging.WARNING)),
+            'log_level': extract_log_level_from_environment('SENTRY_LOG_LEVEL', logging.WARNING),
             'enabled': boolval(os.environ.get('SENTRY_ENABLED', True)),
         }
         self.config.update(config or {})
@@ -116,6 +129,7 @@ class RavenLambdaWrapper(object):
             handler = SentryHandler(self.config['raven_client'])
             handler.setLevel(self.config['log_level'])
             setup_logging(handler)
+
 
     def __call__(self, fn):
         """Wraps our function with the necessary raven context."""
