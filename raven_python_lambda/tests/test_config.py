@@ -27,6 +27,7 @@ def test_config_defaults():
         assert wrapper.config['capture_errors'] == True
         assert wrapper.config['filter_local'] == True
         assert wrapper.config['is_local'] == False
+        assert wrapper.config['logging'] == True
         assert wrapper.config['log_level'] == logging.WARNING
         assert wrapper.config['enabled'] == True
 
