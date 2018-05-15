@@ -104,6 +104,8 @@ during deployment.
 | `SENTRY_CAPTURE_TIMEOUTS` | Enable monitoring execution timeouts (defaults to `true`) |
 | `SENTRY_CAPTURE_LOGS` | Enable capture log messages (defaults to `true`) |
 | `SENTRY_LOG_LEVEL` | Capture logs in sentry starting at this level (defaults to logging.WARNING) |
+| `SENTRY_TIMEOUT_THRESHOLD` | Set the percent threshold to trigger timeout warning (defaults to 0.50) |
+| `SENTRY_MEMORY_THRESHOLD` | Set the percent threshold to trigger memory usage warning (defaults to 0.75) |
 
 In addition the library checks for the following optional variables and adds
 them as custom tags automatically:

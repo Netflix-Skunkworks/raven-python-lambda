@@ -9,7 +9,7 @@ __title__ = "raven-python-lambda"
 __summary__ = ("Decorator for lambda sentry instrumentation.")
 __uri__ = "https://github.com/Netflix-Skunkworks/raven-python-lambda"
 
-__version__ = "0.1.7"
+__version__ = "0.1.8"
 
 __author__ = "The developers"
 __email__ = "oss@netflix.com"

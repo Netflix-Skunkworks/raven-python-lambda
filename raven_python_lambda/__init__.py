@@ -102,7 +102,9 @@ class RavenLambdaWrapper(object):
     def __init__(self, config=None):
         self.config = {
             'capture_timeout_warnings': boolval(os.environ.get('SENTRY_CAPTURE_TIMEOUTS', True)),
+            'timeout_warning_threshold': float(os.environ.get('SENTRY_TIMEOUT_THRESHOLD', 0.50)),
             'capture_memory_warnings': boolval(os.environ.get('SENTRY_CAPTURE_MEMORY', True)),
+            'memory_warning_threshold': float(os.environ.get('SENTRY_MEMORY_THRESHOLD', 0.75)),
             'capture_unhandled_exceptions': boolval(os.environ.get('SENTRY_CAPTURE_UNHANDLED', True)),
             'auto_bread_crumbs': boolval(os.environ.get('SENTRY_AUTO_BREADCRUMBS', True)),
             'capture_errors': boolval(os.environ.get('SENTRY_CAPTURE_ERRORS', True)),
@@ -236,7 +238,9 @@ def memory_warning(config, context):
     limit = float(context.memory_limit_in_mb)
     p = used / limit
 
-    if p >= 0.75:
+    memory_threshold = config.get('memory_warning_threshold')
+
+    if p >= memory_threshold:
         config['raven_client'].captureMessage(
             'Memory Usage Warning',
             level='warning',
@@ -254,10 +258,12 @@ def install_timers(config, context):
     """Create the timers as specified by the plugin configuration."""
     timers = []
     if config.get('capture_timeout_warnings'):
-        # We schedule the warning at half the maximum execution time and
-        # the error a few miliseconds before the actual timeout happens.
+        timeout_threshold = config.get('timeout_warning_threshold')
+        # Schedule the warning at the user specified threshold given in percent.
+        # ie: 0.50 of 30000 ms = 15000ms
+        # Schedule the error a few milliseconds before the actual timeout happens.
         time_remaining = context.get_remaining_time_in_millis() / 1000
-        timers.append(Timer(time_remaining / 2, timeout_warning, (config, context)))
+        timers.append(Timer(time_remaining * timeout_threshold, timeout_warning, (config, context)))
         timers.append(Timer(max(time_remaining - .5, 0), timeout_error, [config]))
 
     if config.get('capture_memory_warnings'):

@@ -21,7 +21,9 @@ def test_config_defaults():
         wrapper = RavenLambdaWrapper()
 
         assert wrapper.config['capture_timeout_warnings'] == True
+        assert wrapper.config['timeout_warning_threshold'] == 0.50
         assert wrapper.config['capture_memory_warnings'] == True
+        assert wrapper.config['memory_warning_threshold'] == 0.75
         assert wrapper.config['capture_unhandled_exceptions'] == True
         assert wrapper.config['auto_bread_crumbs'] == True
         assert wrapper.config['capture_errors'] == True
