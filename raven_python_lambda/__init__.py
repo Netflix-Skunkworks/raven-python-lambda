@@ -132,7 +132,6 @@ class RavenLambdaWrapper(object):
             handler.setLevel(self.config['log_level'])
             setup_logging(handler)
 
-
     def __call__(self, fn):
         """Wraps our function with the necessary raven context."""
         @functools.wraps(fn)
@@ -163,8 +162,7 @@ class RavenLambdaWrapper(object):
                          'user_agent': identity.get('userAgent')
                      }
 
-            # Add additional tags for AWS_PROXY endpoints
-            if event.get('requestContext'):
+                # Add additional tags for AWS_PROXY endpoints
                 raven_context['tags'] = {
                     'api_id': event['requestContext']['apiId'],
                     'api_stage': event['requestContext']['stage'],
