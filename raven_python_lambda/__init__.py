@@ -192,7 +192,7 @@ class RavenLambdaWrapper(object):
                     if event.get('requestContext'):
                         breadcrumb['data'] = {
                             'http_method': event['requestContext']['httpMethod'],
-                            'host': event.get('headers', {}).get('Host'),
+                            'host': (event['headers'] or {}).get('Host'),
                             'path': event['path']
                         }
 
